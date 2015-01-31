@@ -1,8 +1,15 @@
 #!/usr/bin/env python                                                                                                                                                                
+"""
+Python script for scraping the results from http://architectfinder.aia.org/frmSearch.aspx
+"""
+
+__author__ = 'Todd Hayton'
+
 import re
 import os
 import sys
 import django
+import argparse
 import mechanize
 
 sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__), 'scraper/')))
@@ -193,13 +200,22 @@ class ArchitectFinderScraper(object):
             self.br.submit()
 
     def scrape(self):
+        '''
+        First we get a list of the states listed in the form select option
+        ctl00$ContentPlaceHolder1$drpState
+
+        Then we iterate through each state and submit the form for that state.
+        
+        For each state form submission we scrape all of the results via
+        scrape_firm_page() handling pagination in the process.
+        '''
         state_items = self.get_state_items()
         for state_item in state_items:
             if len(state_item.name) < 1:
                 continue
 
             print 'Scraping firms for %s' % state_item.name
-#            self.scrape_state_firms(state_item)
+            self.scrape_state_firms(state_item)
 
         r = r'[A-Z90-9]{8}-'
         for firm in ArchitectureFirm.objects.filter(frmid__regex=r):
@@ -215,5 +231,22 @@ class ArchitectFinderScraper(object):
             print firm
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-s", "--scrape", help="do a fresh scrape",
+                        action="store_true")
+    parser.add_argument("-e", "--export", help="export results as CSV",
+                        action="store_true")
+
     scraper = ArchitectFinderScraper()
-    scraper.scrape()
+    args = parser.parse_args()
+
+    if args.scrape:
+        scraper.scrape()
+
+    if args.export:
+        scraper.export_csv()
+
+    if not (args.scrape or args.export):
+        parser.error('No action requested, add -s/--scrape or -s/--export (or both)')
+
