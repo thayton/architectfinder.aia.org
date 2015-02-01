@@ -6,7 +6,7 @@ class ArchitectureFirm(models.Model):
     addr = models.TextField()
     phone = models.CharField(max_length=12)
     email = models.EmailField()
-    frmid = models.CharField(max_length=64)
+    frmid = models.CharField(max_length=64, unique=True)
     contact_name = models.CharField(max_length=64, default='')
     checked_email = models.BooleanField(default=False)
 
